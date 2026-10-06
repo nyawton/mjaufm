@@ -1,0 +1,69 @@
+async function updateNowPlaying() {
+    const music = document.querySelector(".music");
+    const label = document.getElementById("now-playing-label");
+    const artist = document.getElementById("now-playing-artist");
+    const track = document.getElementById("now-playing-track");
+
+    if (!music || !label || !artist || !track) {
+        console.error("Now Playing elements not found.");
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/music");
+
+        if (!response.ok) {
+            throw new Error(`Music API returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        const currentTrack = data.recenttracks?.track?.[0];
+
+        if (!currentTrack) {
+            music.classList.remove("signal-acquired", "signal-log");
+            music.classList.add("signal-lost");
+
+            label.textContent = "dead frequency";
+            artist.textContent = "";
+            track.textContent = "Signal unavailable.";
+
+            return;
+        }
+
+        const artistName =
+            currentTrack.artist?.["#text"] || "Unknown Artist";
+
+        const title =
+            currentTrack.name || "Unknown Track";
+
+        const isPlaying =
+            currentTrack["@attr"]?.nowplaying === "true";
+
+        music.classList.remove("signal-lost", "signal-acquired", "signal-log");
+
+        if (isPlaying) {
+            music.classList.add("signal-acquired");
+            label.textContent = "signal acquired";
+        } else {
+            music.classList.add("signal-log");
+            label.textContent = "signal log";
+        }
+
+        artist.textContent = artistName;
+        track.textContent = title;
+
+    } catch (error) {
+        console.error("Music error:", error);
+
+        music.classList.remove("signal-acquired", "signal-log");
+        music.classList.add("signal-lost");
+
+        label.textContent = "dead frequency";
+        artist.textContent = "";
+        track.textContent = "";
+    }
+}
+
+updateNowPlaying();
+
+setInterval(updateNowPlaying, 30000);
